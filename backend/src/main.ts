@@ -84,8 +84,8 @@ app.post("/deposit", async (req: Request, res: Response) => {
         quantity: input.quantity
     }
 
-    await connection.query("insert into ccca.account_asset (account_id, assetId, quantity) values ($1, $2, $3)", [deposit.accountId, deposit.assetId, deposit.quantity])
-    res.status(201)
+    await connection.query("insert into ccca.account_asset (account_id, asset_Id, quantity) values ($1, $2, $3)", [deposit.accountId, deposit.assetId, deposit.quantity])
+    res.end()
 })
 
 
