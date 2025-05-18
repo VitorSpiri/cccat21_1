@@ -59,10 +59,10 @@ app.get("/accounts/:accountId", async (req: Request, res: Response) => {
     const accountId = req.params.accountId;
     // const account = accounts.find((account: any) => account.accountId === accountId);
     const [accountData] = await connection.query("select * from ccca.account where account_id = $1", [accountId]);
-    const accountAssetsData = await connection.query("select * from ccca.account_assets where account_id = $1", [accountId])
-    const assets = []
+    const accountAssetsData = await connection.query("select * from ccca.account_asset where account_id = $1", [accountId])
+    accountData.assets = []
     for (const accountAssetData of accountAssetsData){
-        assets.push({ assetId: accountAssetData.asset_Id, quantity: parseFloat(accountAssetData.quantity) })
+        accountData.assets.push({ assetId: accountAssetData.asset_Id, quantity: parseFloat(accountAssetData.quantity) })
     }
     res.json(accountData);
 });
