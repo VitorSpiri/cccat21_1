@@ -59,6 +59,11 @@ app.get("/accounts/:accountId", async (req: Request, res: Response) => {
     const accountId = req.params.accountId;
     // const account = accounts.find((account: any) => account.accountId === accountId);
     const [accountData] = await connection.query("select * from ccca.account where account_id = $1", [accountId]);
+    const accountAssetsData = await connection.query("select * from ccca.account_assets where account_id = $1", [accountId])
+    const assets = []
+    for (const accountAssetData of accountAssetsData){
+        assets.push({ assetId: accountAssetData.asset_Id, quantity: parseFloat(accountAssetData.quantity) })
+    }
     res.json(accountData);
 });
 
@@ -72,11 +77,11 @@ function isValidQuantity (quantity: number) {
 app.post("/deposit", async (req: Request, res: Response) => {
     const input = req.body;
 
-    if (!isValidQuantity(input.quantity)){
-        return res.status(422).json({
-            error: "Invalid quantity"
-        })
-    }
+        if (!isValidQuantity(input.quantity)){
+            return res.status(422).json({
+                error: "Invalid quantity"
+            })
+        }
 
     const deposit = {
         accountId: input.accountId,

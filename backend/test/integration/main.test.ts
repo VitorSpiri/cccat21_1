@@ -75,7 +75,7 @@ test("Não deve criar uma conta com senha inválida", async () => {
     expect(outputSignup.error).toBe("Invalid password");
 });
 
-test("Deve adicionar fundos em uma conta", async () => {
+test.only("Deve adicionar fundos em uma conta", async () => {
     const inputSignup = {
         name: "John Doe",
         email: "john.doe@gmail.com",
@@ -83,9 +83,8 @@ test("Deve adicionar fundos em uma conta", async () => {
         password: "asdQWE123"
     }
 
-    const responseSignup = await axios.post("http://localhost:3000/signup")
+    const responseSignup = await axios.post("http://localhost:3000/signup", inputSignup)
     const outputSignup = responseSignup.data
-    expect(outputSignup.accountId).toBeDefined();
 
     const inputDeposit = {
         accountId: outputSignup.accountId,
@@ -93,8 +92,12 @@ test("Deve adicionar fundos em uma conta", async () => {
         quantity: 10
     }
 
-    const responseDeposit = await axios.post("http://localhost:3000/deposit")
+    const responseDeposit = await axios.post("http://localhost:3000/deposit", inputDeposit)
     const outputDeposit = responseDeposit.status
-    expect(outputDeposit).toBe(201)
+    const responseGetAccount = await axios.get(`http://localhost:3000/accounts/${outputSignup.accountId}`);
+    const outputGetAccount = responseGetAccount.data;
+    expect(outputGetAccount.assets).toHaveLength(1)
+    expect(outputGetAccount.assets[0].assetId).toBe("BTC")
+    expect(outputGetAccount.assets[0].quantity).toBe(10)
 
 })
