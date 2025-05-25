@@ -3,9 +3,11 @@ import crypto from "crypto";
 import pgp from "pg-promise";
 import { validateCpf } from "./validateCpf";
 import { isValidPassword } from "./validatePassword"
+import cors from "cors"
 
 const app = express();
 app.use(express.json());
+app.use(cors())
 
 // const accounts: any = [];
 const connection = pgp()("postgres://postgres:123456@localhost:5431/app");
@@ -93,6 +95,56 @@ app.post("/deposit", async (req: Request, res: Response) => {
     res.end()
 })
 
+app.post("/withdraw", async (req: Request, res: Response) => {
+    const input = req.body; 
+    const [accountAssetsData] = await connection.query("select * from ccca.account_asset where account_id = $1 and asset_id = $2", [input.accountId, input.assetId])
+  
+    if(!accountAssetsData || parseFloat(accountAssetsData.quantity) <= input.quantity){
+        return res.status(422).json({
+            error: "Insufficient funds"
+        })
+    }
+    
+    const newQuantity = parseFloat(accountAssetsData.quantity) - input.quantity
+    await connection.query("update ccca.account_asset set quantity = $1 where account_id = $2 and asset_id = $3", 
+        [newQuantity, input.accountId, input.assetId])
+    res.end()
+})
 
-app.listen(3000);
+app.post("/place_order", async (req: Request, res: Response) => {
+    const input = req.body;
+    const order = {
+        orderId: crypto.randomUUID(),
+        marketId: input.marketId,
+        accountId: input.accountId,
+        side: input.side,
+        quantity: input.quantity,
+        price: input.price,
+        status: "open",
+        timestamp: new Date()
+    }
+    await connection.query("insert into ccca.order (order_id, market_id, account_id, side, quantity, price, status, timestamp) " +
+    "values ($1, $2, $3, $4, $5, $6, $7, $8)", [order.orderId, order.marketId, order.accountId, order.side, order.quantity, 
+    order.price, order.status, order.timestamp])
+    res.json({
+        orderId: order.orderId
+    })
+})
+
+app.get("/orders/:orderId", async (req: Request, res: Response) => {
+    const orderId = req.params.orderId;
+    const [orderData] = await connection.query("select * from ccca.order where order_id = $1", [orderId])
+    const order = {
+        orderId: orderData.order_id,
+        marketId: orderData.market_id,
+        accountId: orderData.account_id,
+        side: orderData.side,
+        quantity: parseFloat(orderData.quantity),
+        price: parseFloat(orderData.price),
+        status: orderData.status,
+        timestamp: orderData.timestamp
+    }
+    res.json(order)
+})
+app.listen(3001);
 
